@@ -1,0 +1,3 @@
+module Garrison
+  VERSION = "0.0.1"
+end
