@@ -1,28 +1,24 @@
+require 'garrison/locking_active_record'
+require 'garrison/keeper'
+require 'garrison/checker_abstract'
+
 module Garrison
   class << self
+    attr_reader :models
+
     def lock!(*models)
-      enchant_lock(*models)
+      @models = models
+      enchant_lock
+    end
+
+    def target?(obj)
+      !models || models.include?(obj.class)|| models.include?(obj)
     end
 
     private
 
-    def enchant_lock(*models)
-      ActiveRecord::Base.class_eval do
-        after_initialize :lock_garrison_lock
-        before_validation :check_garrison_lock_unlock
-
-        def lock_garrison_lock
-          @garrison_lock = true if !models || models.include?(self.class)
-        end
-
-        def check_garrison_lock_unlock
-          raise ::Garrison::Locked if @garrison_lock
-        end
-
-        def unlock_garrison_lock
-          @garrison_lock = false
-        end
-      end
+    def enchant_lock
+      ActiveRecord::Base.include LockingActiveRecord
     end
   end
 
@@ -38,3 +34,4 @@ module Garrison
 
   end
 end
+
