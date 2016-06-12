@@ -3,16 +3,20 @@ module Garrison
     attr_reader :user, :obj
 
     def initialize(user, obj)
-      @user = user
+      @user = user || AnonymousOne.new
       @obj = obj
     end
 
-    def can_read?
-      raise RequireImplement
+    def can_write?
+      false
     end
 
-    def can_write?
-      raise RequireImplement
+    class AnonymousOne
+      def method_missing(name, *)
+        return false if !!name.match(/\?$/)
+        return nil if !!name.match(/^to_/)
+        AnonymousOne.new
+      end
     end
   end
 end

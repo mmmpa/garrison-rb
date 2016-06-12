@@ -1,36 +1,19 @@
 module Garrison
   module LockingActiveRecord
     def self.included(klass)
-      klass.class_eval do
-        after_initialize :lock_garrison_lock
-        before_validation :check_garrison_lock_unlock
-        after_save :lock_garrison_lock_force
-      end
+      klass.instance_eval {
+        after_initialize -> { garrison.lock_initial if Garrison.target?(self) }
+        before_save -> { raise Garrison::Locked if garrison.locked? }
+        after_save -> { garrison.lock if Garrison.target?(self) }
+      } if klass.respond_to? :after_initialize
     end
 
-    def lock_garrison_lock
-      @_garrison_lock = true if Garrison.target?(self) && @_garrison_lock.nil?
+    def garrison
+      @garrison_injector ||= Injectee.new
     end
 
-    def lock_garrison_lock_force
-      @_garrison_lock = nil
-      lock_garrison_lock
-    end
-
-    def garrison_locked?
-      !!@_garrison_lock
-    end
-
-    def _garrison_lock=(val)
-      @_garrison_lock = val
-    end
-
-    def check_garrison_lock_unlock
-      raise Garrison::Locked if @_garrison_lock
-    end
-
-    def unlock_garrison_lock
-      @_garrison_lock = false
+    def garrison_locked=(val)
+      !!val ? garrison.lock : garrison.unlock
     end
   end
 end

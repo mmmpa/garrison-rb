@@ -5,12 +5,12 @@ RSpec.describe Garrison do
 
   describe 'define methods' do
     context 'target class' do
-      subject { ModelA.method_defined? :lock_garrison_lock }
+      subject { ModelA.method_defined? :garrison }
       it { should be_truthy }
     end
 
     context 'not target class' do
-      subject { ModelB.method_defined? :lock_garrison_lock }
+      subject { ModelB.method_defined? :garrison }
       it { should be_truthy }
     end
   end
@@ -19,7 +19,7 @@ RSpec.describe Garrison do
     context 'target class' do
       describe 'locked' do
         let(:model) { ModelA.new(name: 'user') }
-        subject { model.garrison_locked? }
+        subject { model.garrison.locked? }
         it { should be_truthy }
       end
 
@@ -32,13 +32,13 @@ RSpec.describe Garrison do
 
     context 'not target class' do
       describe 'locked' do
-        let(:model) { ModelB.create!(name: 'user', _garrison_lock: false) }
-        subject { model.garrison_locked? }
+        let(:model) { ModelB.create!(name: 'user', garrison_locked: false) }
+        subject { model.garrison.locked? }
         it { should be_falsey }
       end
 
       describe 'save' do
-        let(:model) { ModelB.create!(name: 'user', _garrison_lock: false) }
+        let(:model) { ModelB.create!(name: 'user', garrison_locked: false) }
         subject { model.save }
         it { should be_truthy }
       end
@@ -47,9 +47,9 @@ RSpec.describe Garrison do
 
   describe 'unlock' do
     context 'target class' do
-      let(:model) { ModelA.create!(name: 'user', _garrison_lock: false) }
+      let(:model) { ModelA.create!(name: 'user', garrison_locked: false) }
       subject { model.save }
-      before { model.unlock_garrison_lock }
+      before { model.garrison.unlock }
       it { should be_truthy }
     end
   end
