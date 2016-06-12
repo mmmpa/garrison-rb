@@ -19,6 +19,14 @@ module Garrison
       result
     end
 
+    def method_missing(name, obj, writable = false, &block)
+      check!(obj, name)
+      obj.unlock_garrison_lock if obj.respond_to?(:unlock_garrison_lock) && writable
+      result = block.call(obj) if block_given?
+      obj.lock_garrison_lock_force if obj.respond_to?(:lock_garrison_lock_force) && writable
+      result
+    end
+
     private
 
     def check!(obj, doing)

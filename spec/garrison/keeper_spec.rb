@@ -12,36 +12,54 @@ module Garrison
         let(:model) { ModelA.create!(name: 'user', _garrison_lock: false) }
         let(:keeper) { Keeper.new(user) }
 
-        it 'readable' do
+        it 'read' do
           read = false
           keeper.read(model) { read = true }
           expect(read).to be_truthy
         end
 
-        it 'writable' do
+        it 'other read' do
+          read = false
+          keeper.read_other(model) { read = true }
+          expect(read).to be_truthy
+        end
+
+        it 'write' do
           written = false
           keeper.write(model) { written = model.save }
+          expect(written).to be_truthy
+        end
+
+        it 'other write' do
+          written = false
+          keeper.write_other(model, true) { written = model.save }
           expect(written).to be_truthy
         end
       end
     end
 
-    describe 'auto lock after check' do
+    describe 'auto lock' do
       let(:model) { ModelA.create!(name: 'user', _garrison_lock: false) }
       let(:keeper) { Keeper.new(user) }
+      subject { model.save }
+
+      context 'after create' do
+        it do
+          expect { should }.to raise_error(Garrison::Locked)
+        end
+      end
 
       context 'after read' do
-        it 'readable' do
-          keeper.read(model) { read = true }
-          expect { model.save }.to raise_error(Garrison::Locked)
+        it do
+          keeper.read(model)
+          expect { should }.to raise_error(Garrison::Locked)
         end
       end
 
       context 'after wrote' do
-        it 'writable' do
-          written = false
-          keeper.write(model) { written = model.save }
-          expect { model.save }.to raise_error(Garrison::Locked)
+        it do
+          keeper.write(model)
+          expect { should }.to raise_error(Garrison::Locked)
         end
       end
     end
@@ -53,6 +71,14 @@ module Garrison
     end
 
     def can_write?
+      user.name == obj.name
+    end
+
+    def can_read_other?
+      user.name == obj.name
+    end
+
+    def can_write_other?
       user.name == obj.name
     end
   end
