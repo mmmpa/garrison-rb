@@ -25,9 +25,17 @@ module Garrison
 
     def process(name, obj, writable = false, &block)
       check!(obj, name)
-      obj.garrison.unlock if writable && obj.respond_to?(:garrison)
+
+      if writable && obj.respond_to?(:garrison)
+        obj.garrison.unlock!
+      end
+
       result = block.call(obj) if block_given?
-      obj.garrison.lock if writable && obj.respond_to?(:garrison)
+
+      if writable && obj.respond_to?(:garrison)
+        obj.garrison.lock!
+      end
+
       result
     end
   end

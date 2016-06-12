@@ -9,7 +9,7 @@ module Garrison
     end
 
     def garrison
-      @garrison_injector ||= Injectee.new
+      @garrison_injectee ||= Injectee.new
     end
 
     def garrison_locked=(val)
