@@ -101,38 +101,105 @@ module Garrison
         end
       end
     end
-  end
 
-  class ModelAChecker < CheckerAbstract
-    def can_read?
-      user.name == obj.name
-    end
+    describe 'direct chain' do
+      context 'return result' do
+        let(:model) { DirectObject.new }
+        let(:keeper) { Keeper.new(user) }
 
-    def can_write?
-      user.name == obj.name
-    end
+        it { expect(keeper.(model, :run)).to eq(:run) }
+        it { expect(keeper.(model, :run_with_arg, 'a', 'b', 'c')).to eq('abc') }
+        it { expect(keeper.(model, :run_with_block) { 'abc' }).to eq('abc') }
+        it { expect { keeper.(model, :run_disable) }.to raise_error(Garrison::Forbidden) }
+      end
 
-    def can_read_other?
-      user.name == obj.name
-    end
+      describe 'lock unlock' do
+        context 'enable' do
+          let(:model) { ModelA.create!(name: 'user', garrison_locked: false) }
+          let(:keeper) { Keeper.new(user) }
 
-    def can_write_other?
-      user.name == obj.name
-    end
+          it { expect(keeper.(model, :save)).to be(true) }
+        end
 
-    def can_write_disabled?
-      user.name != obj.name
-    end
-  end
+        context 'disable' do
+          let(:model) { ModelC.create!(name: 'user', garrison_locked: false) }
+          let(:keeper) { Keeper.new(user) }
 
-  class ModelCChecker < CheckerAbstract
-    def can_read?
-      false
-    end
-
-    def can_write?
-      false
+          it { expect { keeper.(model, :save) }.to raise_error(Garrison::Forbidden) }
+        end
+      end
     end
   end
 end
 
+class DirectObject
+  def run
+    :run
+  end
+
+  def run_with_arg(a, b, c)
+    [a, b, c].join
+  end
+
+  def run_with_block(&block)
+    yield
+  end
+
+  def run_disable
+    true
+  end
+end
+
+class DirectObjectChecker < Garrison::CheckerAbstract
+  def can_run?
+    !!user && !!obj
+  end
+
+  def can_run_with_arg?
+    !!user && !!obj
+  end
+
+  def can_run_with_block?
+    !!user && !!obj
+  end
+
+  def can_run_disable?
+    false
+  end
+end
+
+class ModelAChecker < Garrison::CheckerAbstract
+  def can_read?
+    user.name == obj.name
+  end
+
+  def can_write?
+    user.name == obj.name
+  end
+
+  def can_read_other?
+    user.name == obj.name
+  end
+
+  def can_write_other?
+    user.name == obj.name
+  end
+
+  def can_write_disabled?
+    user.name != obj.name
+  end
+
+  def can_save?
+    user.name == obj.name
+  end
+end
+
+class ModelCChecker < Garrison::CheckerAbstract
+  def can_read?
+    false
+  end
+
+  def can_write?
+    false
+  end
+end

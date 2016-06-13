@@ -11,6 +11,10 @@ module Garrison
       false
     end
 
+    def method_missing(*)
+      false
+    end
+
     class AnonymousOne
       def method_missing(name, *)
         return false if !!name.match(/\?$/)

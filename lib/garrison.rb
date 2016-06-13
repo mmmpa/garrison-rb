@@ -2,6 +2,7 @@ require 'garrison/locking_active_record'
 require 'garrison/checker_abstract'
 require 'garrison/keeper'
 require 'garrison/injectee'
+require 'garrison/object_proxy'
 
 module Garrison
   class << self
