@@ -3,6 +3,8 @@ require 'garrison/checker_abstract'
 require 'garrison/keeper'
 require 'garrison/injectee'
 require 'garrison/object_proxy'
+require 'garrison/checker_proxy'
+
 
 module Garrison
   class << self
@@ -20,9 +22,9 @@ module Garrison
     private
 
     def enchant_lock
-      return if @enchanted
-      @enchanted = true
-      ActiveRecord::Base.include LockingActiveRecord
+      @enchanted ||= begin
+        ActiveRecord::Base.include LockingActiveRecord
+      end
     end
   end
 

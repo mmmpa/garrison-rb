@@ -7,53 +7,29 @@ module Garrison
     end
 
     def write(obj, &block)
-      method_missing('write', obj, writable: true, &block)
+      process('write', obj, writable: true, &block)
     end
 
     def call(obj, writable: true)
-      chain(obj, writable: writable)
+      ObjectProxy.new(obj) do |doing, &block|
+        process(doing, obj, writable: writable, &block)
+      end
     end
 
-    def chain(obj, writable: true)
-      ObjectProxy.new(obj) do |doing, &block|
-        begin
-          check!(obj, doing)
-          unlock(obj) if writable
-          block.call
-        ensure
-          lock(obj) if writable
-        end
-      end
+    private
+
+    def check!(obj, doing)
+      CheckerProxy.new(@user, obj, doing).check!
     end
 
     def method_missing(name, obj, writable: false, &block)
       process(name, obj, writable: writable, &block)
     end
 
-    private
-
-    def check!(obj, doing)
-      checker = checker_for(obj).new(user, obj)
-
-      raise Forbidden unless checker.send(checker_method_for(doing))
-    end
-
-    def checker_for(obj)
-      # インスタンス
-      "#{obj.class.name}Checker".gsub('::', '').constantize
-    rescue
-      # クラス
-      "#{obj.name}ClassChecker".gsub('::', '').constantize
-    end
-
-    def checker_method_for(doing)
-      "can_#{doing.to_s.gsub('!', '')}?"
-    end
-
-    def process(name, obj, writable: false, &block)
-      check!(obj, name)
+    def process(doing, obj, writable: false, &block)
+      check!(obj, doing)
       unlock(obj) if writable
-      block.call(obj) if block_given?
+      block.call(self) if block_given?
     ensure
       lock(obj) if writable
     end
