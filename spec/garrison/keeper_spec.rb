@@ -74,6 +74,14 @@ module Garrison
           expect(result).to eq(:abc)
         end
       end
+
+      context 'class method' do
+        let(:klass) { DirectObject }
+        let(:keeper) { Keeper.new(user) }
+
+        it { expect(keeper.(klass).class_run).to eq(:abc) }
+        it { expect { keeper.(klass).class_run_disable }.to raise_error(Garrison::Forbidden) }
+      end
     end
 
     describe 'auto lock' do
@@ -87,6 +95,13 @@ module Garrison
         end
       end
 
+      context 'after save' do
+        it do
+          model.garrison.unlock
+          model.save
+          expect { should }.to raise_error(Garrison::Locked)
+        end
+      end
       context 'after read' do
         it do
           keeper.read(model)
@@ -100,6 +115,13 @@ module Garrison
           expect { should }.to raise_error(Garrison::Locked)
         end
       end
+
+      context 'after exception' do
+        it do
+          keeper.write(model) { raise 'some error' } rescue nil
+          expect { should }.to raise_error(Garrison::Locked)
+        end
+      end
     end
 
     describe 'direct chain' do
@@ -107,10 +129,10 @@ module Garrison
         let(:model) { DirectObject.new }
         let(:keeper) { Keeper.new(user) }
 
-        it { expect(keeper.(model, :run)).to eq(:run) }
-        it { expect(keeper.(model, :run_with_arg, 'a', 'b', 'c')).to eq('abc') }
-        it { expect(keeper.(model, :run_with_block) { 'abc' }).to eq('abc') }
-        it { expect { keeper.(model, :run_disable) }.to raise_error(Garrison::Forbidden) }
+        it { expect(keeper.(model).run).to eq(:run) }
+        it { expect(keeper.(model).run_with_arg('a', 'b', 'c')).to eq('abc') }
+        it { expect(keeper.(model).run_with_block { 'abc' }).to eq('abc') }
+        it { expect { keeper.(model).run_disable }.to raise_error(Garrison::Forbidden) }
       end
 
       describe 'lock unlock' do
@@ -118,14 +140,19 @@ module Garrison
           let(:model) { ModelA.create!(name: 'user', garrison_locked: false) }
           let(:keeper) { Keeper.new(user) }
 
-          it { expect(keeper.(model, :save)).to be(true) }
+          it { expect(keeper.(model).save).to be(true) }
+
+          it 'ensure lock after exception' do
+            keeper.(model).undefined rescue nil
+            expect { model.save }.to raise_error(Garrison::Locked)
+          end
         end
 
         context 'disable' do
           let(:model) { ModelC.create!(name: 'user', garrison_locked: false) }
           let(:keeper) { Keeper.new(user) }
 
-          it { expect { keeper.(model, :save) }.to raise_error(Garrison::Forbidden) }
+          it { expect { keeper.(model).save }.to raise_error(Garrison::Forbidden) }
         end
       end
     end
@@ -133,6 +160,16 @@ module Garrison
 end
 
 class DirectObject
+  class << self
+    def class_run
+      :abc
+    end
+
+    def class_run_disable
+      :abc
+    end
+  end
+
   def run
     :run
   end
@@ -164,6 +201,16 @@ class DirectObjectChecker < Garrison::CheckerAbstract
   end
 
   def can_run_disable?
+    false
+  end
+end
+
+class DirectObjectClassChecker < Garrison::CheckerAbstract
+  def can_class_run?
+    !!user && !!obj
+  end
+
+  def can_class_run_disable?
     false
   end
 end

@@ -10,16 +10,20 @@ module Garrison
       method_missing('write', obj, writable: true, &block)
     end
 
-    def call(obj, doing, *args, writable: true, &block)
-      make(obj, doing, *args, writable: writable, &block)
+    def call(obj, writable: true)
+      chain(obj, writable: writable)
     end
 
-    def make(obj, doing, *args, writable: true, &block)
-      check!(obj, doing)
-      unlock(obj) if writable
-      ObjectProxy.new(obj).send(doing, *args, &block)
-    ensure
-      lock(obj) if writable
+    def chain(obj, writable: true)
+      ObjectProxy.new(obj) do |doing, &block|
+        begin
+          check!(obj, doing)
+          unlock(obj) if writable
+          block.call
+        ensure
+          lock(obj) if writable
+        end
+      end
     end
 
     def method_missing(name, obj, writable: false, &block)
@@ -29,18 +33,21 @@ module Garrison
     private
 
     def check!(obj, doing)
-      checker = checker_class_for(obj).new(user, obj)
+      checker = checker_for(obj).new(user, obj)
 
       raise Forbidden unless checker.send(checker_method_for(doing))
     end
 
-    def checker_class_for(obj)
-      name = "#{obj.class.name}Checker"
-      eval(name.gsub('::', ''))
+    def checker_for(obj)
+      # インスタンス
+      "#{obj.class.name}Checker".gsub('::', '').constantize
+    rescue
+      # クラス
+      "#{obj.name}ClassChecker".gsub('::', '').constantize
     end
 
     def checker_method_for(doing)
-      "can_#{doing}?"
+      "can_#{doing.to_s.gsub('!', '')}?"
     end
 
     def process(name, obj, writable: false, &block)
