@@ -5,6 +5,8 @@ require 'garrison/injectee'
 require 'garrison/object_proxy'
 require 'garrison/checker_proxy'
 require 'garrison/constraint_abstract'
+require 'garrison/constraint_proxy'
+require 'garrison/route_checker_abstract'
 
 module Garrison
   class << self

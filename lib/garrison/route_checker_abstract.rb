@@ -7,8 +7,12 @@ module Garrison
       @request = request
     end
 
+    def deny_all
+      true
+    end
+
     def method_missing(*)
-      false
+      !deny_all
     end
   end
 end

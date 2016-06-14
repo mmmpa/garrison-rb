@@ -19,10 +19,7 @@ module Garrison
     end
 
     def check_for_guard(user, request)
-      ConstraintProxy.new(user, request).check!
-      false
-    rescue
-      true
+      ConstraintProxy.new(user, request, blocking: true).check!
     end
   end
 end

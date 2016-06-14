@@ -1,21 +1,27 @@
 module Garrison
   class ConstraintProxy
-    def initialize(user, request)
+    def initialize(user, request, blocking: false)
       @user = user
       @request = request
+      @action = request.params['action']
+      @controller =request.params['controller']
+      @blocking = blocking
     end
 
     def checker
-      @request
-      "#{@request.class.name}RouteChecker".gsub('::', '').constantize
+      "#{@controller.camelize}RouteChecker".gsub('::', '').constantize
     end
 
     def check_method
-      @request
+      if @blocking
+        "block_#{@action.to_s.gsub('!', '')}?"
+      else
+        "can_#{@action.to_s.gsub('!', '')}?"
+      end
     end
 
     def check!
-      raise Forbidden unless checker.new(@user, @request).send(check_method)
+      checker.new(@user, @request).send(check_method)
     end
   end
 end
