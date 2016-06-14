@@ -4,7 +4,7 @@ require 'garrison/keeper'
 require 'garrison/injectee'
 require 'garrison/object_proxy'
 require 'garrison/checker_proxy'
-
+require 'garrison/constraint_abstract'
 
 module Garrison
   class << self
@@ -32,6 +32,10 @@ module Garrison
   end
 
   class Forbidden < StandardError
+  end
+
+  class ImplementRequired < StandardError
+
   end
 end
 
