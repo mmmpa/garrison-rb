@@ -145,3 +145,71 @@ or
 ```ruby
 ModelA.create(garrison_locked: false) #=> ModelA
 ```
+
+# Route Constraint
+
+Require implement a method `user`.
+
+```ruby
+class ConstraintA < Garrison::ConstraintAbstract
+  def user
+    ConstraintCurrentUser.user
+  end
+end
+```
+
+In `routes.rb`.
+
+```ruby
+scope constraints: ConstraintA.new do
+  get 'a' => 'direct#index'
+  patch 'a' => 'direct#update'
+end
+```
+
+And a checker for `DirectController`.
+
+```ruby
+class DirectRouteChecker < Garrison::RouteCheckerAbstract
+  def can_index?
+    user.name == 'constraint'
+  end
+
+  def can_update?
+    user.name == 'admin'
+  end
+end
+```
+
+## Like a guard section
+
+```ruby
+class GuardConstraint < Garrison::ConstraintAbstract
+  def user
+    ConstraintCurrentUser.user
+  end
+
+  def for_guard
+    true
+  end
+end
+```
+
+```ruby
+scope constraints: GuardConstraint.new do
+  post 'any' => 'forbidden#create'
+  post 'other' => 'forbidden#create_other'
+end
+```
+
+```ruby
+class ForbiddenRouteChecker < Garrison::RouteCheckerAbstract
+  def block_create?
+    user.name != 'admin'
+  end
+
+  def block_create_other?
+    user.name != 'admin'
+  end
+end
+```
