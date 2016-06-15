@@ -8,7 +8,7 @@
 
 # Garrison
 
-Supply methods for authorization.
+Supply methods for authorization And easy constraint for Route.
 
 # Installation
 
